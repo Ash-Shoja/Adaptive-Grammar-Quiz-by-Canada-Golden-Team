@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Adaptive Grammar Quiz by Canada Golden Team</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Adaptive Grammar Quiz by Canada Golden Team helps you improve your English quickly with interactive flashcards, quizzes, and personalized study paths.">
+  <meta name="keywords" content="English, grammar, quiz, flashcards, exam preparation, Canada Golden Team, Ash Shoja">
+  <meta name="robots" content="index, follow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <style>
+    /* Global Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 0;
+    }
+    header, footer {
+      background: #4285f4;
+      color: #fff;
+      text-align: center;
+      padding: 10px 0;
+    }
+    /* Navigation Bar */
+    nav {
+      background: #3367d6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+      gap: 20px;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    /* Container Styles */
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .hidden { display: none; }
+    .btn {
+      background: #4285f4;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .btn:hover { background: #3367d6; }
+    .input-field {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .option {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #4285f4;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      margin: 10px 0;
+      cursor: pointer;
+      text-align: left;
+    }
+    .option:hover { background: #3367d6; }
+    #quizImage {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    #feedback {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+  
+  <!-- Firebase and Chart.js libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Adaptive Grammar Quiz by Canada Golden Team</h1>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav>
+    <a onclick="navigateTo('homeSection')">🏠 Main Page</a>
+    <a onclick="navigateTo('topicsSection')">📚 Topics</a>
+    <a onclick="navigateTo('askMeSection')">❓ Ask Me</a>
+    <a onclick="navigateTo('accountSection')">👤 Account</a>
+    <a onclick="navigateTo('aboutUsSection')">About Us</a>
+    <a onclick="navigateTo('contactUsSection')">Contact Us</a>
+  </nav>
+  
+  <!-- Home Section (Guest Mode Default) -->
+  <div class="container" id="homeSection">
+    <h2>Boost Your English in Record Time!</h2>
+    <p>
+      Welcome! This app is designed to rapidly improve your English skills and help you prepare for any exam – all in a very short time.
+      Start studying immediately as a guest by selecting your language level and study duration below.
+      <br><br>
+      <em>Note:</em> To save your progress, access personalized features, and choose specific grammar topics, please sign up for a free account.
+    </p>
+    <div>
+      <label for="languageLevelSelect">Select Your Language Level:</label>
+      <select id="languageLevelSelect" class="input-field">
+        <option value="Beginner">Beginner</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Advanced">Advanced</option>
+      </select>
+    </div>
+    <div>
+      <label for="studyMinutes">Study Duration (minutes):</label>
+      <input type="number" id="studyMinutes" class="input-field" min="1" max="120" value="15">
+    </div>
+    <button class="btn" id="startBtn">Start Learning as Guest</button>
+  </div>
+
+  <!-- Topics Section -->
+  <div class="container hidden" id="topicsSection">
+    <h2>Select a Grammar Topic</h2>
+    <p>Choose a topic below to study specific grammar areas. You can study sequentially or randomly.</p>
+    <div id="topicsContainer">
+      <!-- Topic buttons will be injected here -->
+    </div>
+    <p>
+      Study Mode: 
+      <button class="btn" onclick="setStudyMode('sequential')">Sequential</button>
+      <button class="btn" onclick="setStudyMode('random')">Random</button>
+    </p>
+  </div>
+  
+  <!-- Authentication Section -->
+  <div class="container hidden" id="authSection">
+    <h2>Login / Signup</h2>
+    <div id="loginForm">
+      <input type="email" id="loginEmail" class="input-field" placeholder="Email">
+      <input type="password" id="loginPassword" class="input-field" placeholder="Password">
+      <button class="btn" id="loginBtn">Login</button>
+      <p>Or create a new account below to save your progress.</p>
+    </div>
+    <div id="signupForm">
+      <input type="email" id="signupEmail" class="input-field" placeholder="Email">
+      <input type="password" id="signupPassword" class="input-field" placeholder="Password">
+      <input type="password" id="signupConfirmPassword" class="input-field" placeholder="Confirm Password">
+      <button class="btn" id="signupBtn">Sign Up</button>
+    </div>
+  </div>
+  
+  <!-- Account Section (for logged in users) -->
+  <div class="container hidden" id="accountSection">
+    <h2>Account Information</h2>
+    <div id="accountInfo">
+      <!-- User account details will be shown here -->
+    </div>
+    <button class="btn" id="logoutBtn">Log Out</button>
+    <p>
+      Access your saved progress, view your improvement trend, and manage your personalized study topics.
+    </p>
+  </div>
+  
+  <!-- Quiz Section -->
+  <div class="container hidden" id="quizSection">
+    <h2 id="questionText">Question will appear here</h2>
+    <img id="quizImage" src="" alt="Illustration" style="display: none;">
+    <div id="optionsContainer">
+      <!-- Options buttons will be injected here -->
+    </div>
+    <div id="feedback"></div>
+    <button class="btn" id="moreInfoBtn" style="display: none;">More Info</button>
+    <br>
+    <button class="btn" id="nextQuestionBtn">Next Question</button>
+    <br>
+    <button class="btn" id="viewMistakesBtn">Review Mistakes</button>
+    <br>
+    <button class="btn" id="viewProgressBtn">View Progress Chart</button>
+    <br>
+    <p style="font-style: italic; margin-top:10px;">Guest Mode: Your progress won’t be saved. Sign up via the Account section for full features.</p>
+  </div>
+  
+  <!-- Mistakes Review Section -->
+  <div class="container hidden" id="mistakesSection">
+    <h2>Your Mistakes</h2>
+    <div id="mistakesContainer">
+      <!-- Mistake flashcards will be listed here -->
+    </div>
+    <button class="btn" id="backToQuizBtn">Back to Quiz</button>
+  </div>
+  
+  <!-- Progress Chart Section -->
+  <div class="container hidden" id="progressSection">
+    <h2>Your Improvement Trend</h2>
+    <canvas id="progressChart" width="400" height="200"></canvas>
+    <button class="btn" id="backToQuizFromChartBtn">Back to Quiz</button>
+  </div>
+  
+  <!-- Ask Me Section -->
+  <div class="container hidden" id="askMeSection">
+    <h2>Ask Me Anything</h2>
+    <p>You can ask any question regarding your learning. We'll answer it, generate a quiz, or create flashcards tailored to your needs using AI.</p>
+    <input type="text" id="askQuestionInput" class="input-field" placeholder="Type your question here...">
+    <button class="btn" id="askQuestionBtn">Submit Question</button>
+    <div id="askAnswer" style="margin-top: 10px; font-weight: bold;"></div>
+  </div>
+  
+  <!-- About Us Section -->
+  <div class="container hidden" id="aboutUsSection">
+    <h2>About Us</h2>
+    <p>Will be updated soon.</p>
+  </div>
+  
+  <!-- Contact Us Section -->
+  <div class="container hidden" id="contactUsSection">
+    <h2>Contact Us</h2>
+    <form id="contactForm">
+      <input type="text" id="contactName" class="input-field" placeholder="Your Name" required>
+      <input type="email" id="contactEmail" class="input-field" placeholder="Your Email" required>
+      <textarea id="contactMessage" class="input-field" placeholder="Your Message" rows="4" required></textarea>
+      <button class="btn" type="submit">Send Message</button>
+    </form>
+  </div>
+  
+  <footer>
+    © 2025 Ash Shoja. All Rights Reserved.
+  </footer>
+  
+  <!-- JavaScript -->
+  <script>
+    // Basic security measures
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = function(e) {
+      if (e.keyCode === 123 ||
+          (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+          (e.ctrlKey && e.keyCode === 85)) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    /* ---------------- Firebase Setup ---------------- */
+    // Replace with your own Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    /* ---------------- Global Variables ---------------- */
+    let currentFlashcards = [];
+    let currentQuestionIndex = 0;
+    let mistakes = [];
+    let currentFlashcard = null;
+    let studyMode = 'sequential'; // 'sequential' or 'random'
+
+    /* ---------------- Sample Flashcards Data ---------------- */
+    // Each flashcard now has a "topic" property.
+    const flashcardsData = [
+      {
+        question: "Define a proper noun and give an example.",
+        answers: [
+          "It names a specific person, place, or thing. (e.g., London, Alice)",
+          "It is a common name for a class of objects.",
+          "It represents an action or state."
+        ],
+        correct: 0,
+        explanation: "Proper nouns name specific entities and are capitalized.",
+        moreInfo: "They always begin with a capital letter and refer to unique items.",
+        level: "Beginner",
+        topic: "Nouns",
+        image: "https://via.placeholder.com/600x300?text=Proper+Noun+Illustration"
+      },
+      {
+        question: "What is a compound sentence? Provide an example.",
+        answers: [
+          "A sentence that joins two independent clauses with a coordinating conjunction.",
+          "A sentence with one independent clause and one or more dependent clauses.",
+          "A sentence that describes a single idea."
+        ],
+        correct: 0,
+        explanation: "A compound sentence combines two independent clauses using a coordinating conjunction.",
+        moreInfo: "Example: 'I wanted to go, but I was too tired.'",
+        level: "Intermediate",
+        topic: "Sentences",
+        image: "https://via.placeholder.com/600x300?text=Compound+Sentence+Illustration"
+      },
+      {
+        question: "Which of the following is an example of the present continuous tense?",
+        answers: [
+          "I read a book.",
+          "I am reading a book.",
+          "I have read a book."
+        ],
+        correct: 1,
+        explanation: "The present continuous tense describes an action happening right now.",
+        moreInfo: "It is formed with 'am/is/are' plus the -ing form of the verb.",
+        level: "Beginner",
+        topic: "Tenses",
+        image: "https://via.placeholder.com/600x300?text=Present+Continuous+Illustration"
+      },
+      {
+        question: "Explain what a gerund is.",
+        answers: [
+          "A verb form that functions as a noun, ending in -ing.",
+          "A type of adjective describing a noun.",
+          "A noun that represents an action."
+        ],
+        correct: 0,
+        explanation: "A gerund is a verb ending in -ing that functions as a noun.",
+        moreInfo: "Gerunds can serve as the subject or object in a sentence.",
+        level: "Intermediate",
+        topic: "Verbs",
+        image: "https://via.placeholder.com/600x300?text=Gerund+Illustration"
+      },
+      {
+        question: "What is the difference between active and passive voice?",
+        answers: [
+          "Active: Subject performs the action; Passive: Subject receives the action.",
+          "Active uses auxiliary verbs; Passive does not.",
+          "Active is always more formal than passive."
+        ],
+        correct: 0,
+        explanation: "Active voice shows the subject performing the action, while passive voice shows the subject receiving the action.",
+        moreInfo: "Active voice is direct and vigorous; passive voice is used when the actor is unknown or less important.",
+        level: "Advanced",
+        topic: "Voice",
+        image: "https://via.placeholder.com/600x300?text=Active+vs+Passive+Illustration"
+      }
+    ];
+
+    /* ---------------- Navigation Functions ---------------- */
+    function navigateTo(sectionId) {
+      // Hide all sections
+      const sections = [
+        "homeSection", "authSection", "quizSection", "mistakesSection",
+        "progressSection", "askMeSection", "aboutUsSection", "contactUsSection",
+        "accountSection", "topicsSection", "loginForm", "signupForm"
+      ];
+      sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      
+      // Show selected section
+      document.getElementById(sectionId).classList.remove('hidden');
+      if (sectionId === 'accountSection') {
+        if (!auth.currentUser) {
+          document.getElementById('authSection').classList.remove('hidden');
+        } else {
+          showAccountInfo();
+        }
+      }
+      if (sectionId === 'topicsSection') {
+        renderTopics();
+      }
+    }
+
+    /* ---------------- Home Section Event ---------------- */
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const level = document.getElementById('languageLevelSelect').value;
+      const minutes = document.getElementById('studyMinutes').value;
+      console.log("Selected level:", level, "Study duration:", minutes, "minutes");
+      currentFlashcards = adjustFlashcards(level);
+      currentQuestionIndex = 0;
+      // Proceed directly to quiz (guest mode).
+      navigateTo('quizSection');
+      showFlashcard(currentQuestionIndex);
+    });
+
+    /* ---------------- Topics Section ---------------- */
+    function renderTopics() {
+      const topics = [...new Set(flashcardsData.map(card => card.topic))];
+      let html = "";
+      topics.forEach(topic => {
+        html += `<button class="btn" onclick="filterByTopic('${topic}')">${topic}</button> `;
+      });
+      document.getElementById('topicsContainer').innerHTML = html;
+    }
+    function filterByTopic(topic) {
+      const level = document.getElementById('languageLevelSelect').value;
+      currentFlashcards = flashcardsData.filter(card => card.level === level && card.topic === topic);
+      if (studyMode === 'random') {
+        currentFlashcards.sort(() => Math.random() - 0.5);
+      }
+      currentQuestionIndex = 0;
+      navigateTo('quizSection');
+      showFlashcard(currentQuestionIndex);
+    }
+    function setStudyMode(mode) {
+      studyMode = mode;
+      alert("Study mode set to " + mode);
+    }
+
+    /* ---------------- Authentication ---------------- */
+    document.getElementById('signupBtn')?.addEventListener('click', () => {
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirmPassword').value;
+      if (password !== confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(cred => {
+          console.log("Signup successful:", cred.user.email);
+          return db.collection("users").doc(cred.user.uid).set({
+            email: cred.user.email,
+            progress: [],
+            mistakes: []
+          });
+        })
+        .then(() => {
+          alert("Signup successful! You can now log in.");
+          navigateTo('authSection');
+        })
+        .catch(err => alert(err.message));
+    });
+    document.getElementById('loginBtn')?.addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(cred => {
+          console.log("Login successful:", cred.user.email);
+          navigateTo('quizSection');
+          showFlashcard(currentQuestionIndex);
+        })
+        .catch(err => alert(err.message));
+    });
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+      auth.signOut().then(() => {
+        alert("Logged out successfully.");
+        navigateTo('homeSection');
+      });
+    });
+    function showAccountInfo() {
+      const user = auth.currentUser;
+      if (user) {
+        document.getElementById('accountInfo').innerHTML = `<p>Email: ${user.email}</p>`;
+      }
+    }
+
+    /* ---------------- Quiz Section ---------------- */
+    function showFlashcard(index) {
+      if (currentFlashcards.length === 0) {
+        document.getElementById('questionText').innerText = "No flashcards available for this level/topic.";
+        document.getElementById('optionsContainer').innerHTML = "";
+        document.getElementById('quizImage').style.display = "none";
+        document.getElementById('feedback').innerText = "";
+        return;
+      }
+      currentFlashcard = currentFlashcards[index];
+      document.getElementById('questionText').innerText = currentFlashcard.question;
+      const quizImg = document.getElementById('quizImage');
+      if (currentFlashcard.image) {
+        quizImg.src = currentFlashcard.image;
+        quizImg.style.display = "block";
+      } else {
+        quizImg.style.display = "none";
+      }
+      let optionsHTML = "";
+      currentFlashcard.answers.forEach((ans, i) => {
+        optionsHTML += `<button class="option" onclick="checkAnswer(${i})">${ans}</button>`;
+      });
+      document.getElementById('optionsContainer').innerHTML = optionsHTML;
+      document.getElementById('feedback').innerText = "";
+      document.getElementById('moreInfoBtn').style.display = "none";
+    }
+    function checkAnswer(selected) {
+      const feedbackEl = document.getElementById('feedback');
+      if (selected === currentFlashcard.correct) {
+        feedbackEl.innerHTML = "Hurrah! Correct answer.<br>" + currentFlashcard.explanation;
+      } else {
+        feedbackEl.innerHTML = "Oops! Wrong answer. The correct answer is:<br><em>" + currentFlashcard.answers[currentFlashcard.correct] + "</em><br>" +
+          currentFlashcard.explanation + "<br>Need more info?";
+        document.getElementById('moreInfoBtn').style.display = "inline-block";
+        const user = auth.currentUser;
+        if (user) {
+          db.collection("users").doc(user.uid).update({
+            mistakes: firebase.firestore.FieldValue.arrayUnion(currentFlashcard)
+          });
+        }
+        mistakes.push(currentFlashcard);
+      }
+    }
+    document.getElementById('moreInfoBtn').addEventListener('click', () => {
+      alert(currentFlashcard.moreInfo);
+    });
+    document.getElementById('nextQuestionBtn').addEventListener('click', () => {
+      currentQuestionIndex = (currentQuestionIndex + 1) % currentFlashcards.length;
+      showFlashcard(currentQuestionIndex);
+      const user = auth.currentUser;
+      if (user) {
+        db.collection("users").doc(user.uid).update({
+          progress: firebase.firestore.FieldValue.arrayUnion({
+            timestamp: new Date().toISOString(),
+            level: document.getElementById('languageLevelSelect').value
+          })
+        });
+      }
+    });
+    document.getElementById('viewMistakesBtn').addEventListener('click', () => {
+      navigateTo('mistakesSection');
+      renderMistakes();
+    });
+    document.getElementById('viewProgressBtn').addEventListener('click', () => {
+      navigateTo('progressSection');
+      renderProgressChart();
+    });
+    function renderMistakes() {
+      let html = "";
+      if (mistakes.length === 0) {
+        html = "<p>No mistakes recorded. Great job!</p>";
+      } else {
+        mistakes.forEach(card => {
+          html += `<div style="margin:10px 0; padding:10px; border:1px solid #ccc; border-radius:5px;">
+                    <h3>${card.question}</h3>
+                    <p>Correct Answer: ${card.answers[card.correct]}</p>
+                    <p>${card.explanation}</p>
+                  </div>`;
+        });
+      }
+      document.getElementById('mistakesContainer').innerHTML = html;
+    }
+    function renderProgressChart() {
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      const data = {
+        labels: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"],
+        datasets: [{
+          label: 'Language Improvement',
+          data: [1, 2, 3, 4, 5],
+          backgroundColor: 'rgba(66, 133, 244, 0.2)',
+          borderColor: 'rgba(66, 133, 244, 1)',
+          borderWidth: 2
+        }]
+      };
+      const config = {
+        type: 'line',
+        data: data,
+        options: { scales: { y: { beginAtZero: true } } }
+      };
+      new Chart(ctx, config);
+    }
+
+    /* ---------------- Ask Me Section ---------------- */
+    document.getElementById('askQuestionBtn').addEventListener('click', () => {
+      const question = document.getElementById('askQuestionInput').value;
+      if (!question) {
+        alert("Please enter a question.");
+        return;
+      }
+      const answer = "AI Response: We suggest creating a flashcard for this question!";
+      document.getElementById('askAnswer').innerText = answer;
+      const user = auth.currentUser;
+      if (user) {
+        db.collection("users").doc(user.uid).update({
+          aiQueries: firebase.firestore.FieldValue.arrayUnion({ question, answer, timestamp: new Date().toISOString() })
+        });
+      }
+    });
+
+    /* ---------------- Contact Us Section ---------------- */
+    document.getElementById('contactForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('contactName').value;
+      const email = document.getElementById('contactEmail').value;
+      const message = document.getElementById('contactMessage').value;
+      alert("Thank you, " + name + "! Your message has been sent.");
+      document.getElementById('contactForm').reset();
+    });
+
+    /* ---------------- Simulated AI Auto-Upgrade ---------------- */
+    function autoUpgrade() {
+      console.log("Auto-upgrading flashcards via AI...");
+      // Replace with a real API call to update flashcards if needed.
+    }
+    setInterval(autoUpgrade, 300000); // Every 5 minutes
+
+    /* ---------------- Adjust Flashcards Function ---------------- */
+    function adjustFlashcards(level) {
+      console.log("Adjusting flashcards for level:", level);
+      return flashcardsData.filter(card => card.level === level);
+    }
+
+    /* ---------------- Firebase Auth Observer ---------------- */
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("User logged in:", user.email);
+        db.collection("users").doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            const userData = doc.data();
+            if (userData.mistakes) mistakes = userData.mistakes;
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
